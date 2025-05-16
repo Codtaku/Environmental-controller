@@ -230,7 +230,7 @@ void handleResetTimerEntry() {
 
     // Validation
     noInterrupts(); uint8_t currentCount = timerCount; interrupts();
-    if (index < 0 || index >= currentCount || index >= APP_MAX_TIMERS) {
+    if (index < 0 || index > currentCount || index > APP_MAX_TIMERS) {
          server.send(400, "text/plain", "Invalid timer index");
          return;
     }
