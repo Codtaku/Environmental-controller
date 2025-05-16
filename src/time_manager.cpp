@@ -1,184 +1,234 @@
-#include "time_manager.h"
-#include <WiFi.h>           // Required for checking WiFi status and NTP config
-#include "blynk_handler.h"  // For sending timer info (V20) and notifications
-#include "eeprom_manager.h" // For saving timer data
+#include "eeprom_manager.h"
+#include <EEPROM.h>
 
-// RTC Instance
-RTC_DS3231 rtc;
+// Define reasonable defaults and validation ranges for timer entries
+#define TIMER_DEFAULT_MIN_TEMP 28
+#define TIMER_DEFAULT_MAX_TEMP 32
+#define TIMER_VALID_MIN_TEMP 0
+#define TIMER_VALID_MAX_TEMP 50 // Adjust if your system supports higher/lower
+#define TIMER_VALID_MAX_DAY_OFFSET 3650 // Max 10 years of offset
 
-// NTP configuration
-const char *ntpServer1 = "pool.ntp.org";
-const char *ntpServer2 = "time.nist.gov";
-const long gmtOffset_sec = 7 * 3600; // GMT+7 offset for Vietnam in seconds
-const int daylightOffset_sec = 0;    // No daylight saving offset
-unsigned long lastNtpSync = 0;       // <-- DEFINE HERE
-bool initialNtpSyncDone = false;     // <-- DEFINE HERE
-void setupTime()
+void setupEEPROM()
 {
-    // Initialize I2C if not already done (Wire.begin might be called in main setup)
-    // Wire.begin(I2C_SDA, I2C_SCL); // Uncomment if I2C is not started elsewhere
-
-    if (!rtc.begin())
-    {
-        Serial.println("FATAL: Couldn't find RTC! Check wiring/address.");
-        // Optional: Halt execution or try fallback?
-        // while(1) delay(1000);
-    }
-    else
-    {
-        Serial.println("RTC Initialized.");
-    }
-
-    if (rtc.lostPower())
-    {
-        Serial.println("RTC lost power, setting time from compile time.");
-        // Set the RTC to the date & time this sketch was compiled
-        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-        // Note: This time will be incorrect until NTP sync occurs.
-    }
-    else
-    {
-        Serial.println("RTC has valid time.");
-        DateTime now = rtc.now();
-        Serial.print("Current RTC Time: ");
-        Serial.print(now.year(), DEC);
-        Serial.print('/');
-        Serial.print(now.month(), DEC);
-        Serial.print('/');
-        Serial.print(now.day(), DEC);
-        Serial.print(" ");
-        Serial.print(now.hour(), DEC);
-        Serial.print(':');
-        Serial.print(now.minute(), DEC);
-        Serial.print(':');
-        Serial.println(now.second(), DEC);
-    }
-
-    // Initialize last NTP sync time
-    lastNtpSync = 0; // Force NTP sync attempt soon after connection
-    initialNtpSyncDone = false;
+    EEPROM.begin(EEPROM_SIZE);
+    Serial.println("EEPROM Initialized.");
 }
 
-void updateRTCFromNTP()
+void saveSettingsEEPROM()
 {
-    // Attempt NTP sync only if connected to WiFi and interval has passed or first time
-    if (!offlineMode && WiFi.status() == WL_CONNECTED)
+    Serial.println("Saving settings to EEPROM...");
+    // Disable interrupts during critical EEPROM operations if necessary,
+    // though EEPROM library itself might handle atomicity for single put/get.
+    // For multiple puts forming a logical unit, consider if an intermediate power loss is a concern.
+    // noInterrupts(); 
+
+    EEPROM.put(EEPROM_ADDR_MIN, mi);
+    EEPROM.put(EEPROM_ADDR_MAX, ma);
+    EEPROM.put(EEPROM_ADDR_DELAY, switchingDelay);
+    EEPROM.put(EEPROM_ADDR_HUM_LIMIT, humLimit);
+    EEPROM.put(EEPROM_ADDR_GAS_LIMIT, gasLimit); // Save Gas Limit
+
+    // Save Timer Mode Data
+    EEPROM.put(EEPROM_ADDR_TIMER_COUNT, timerCount);
+    EEPROM.put(EEPROM_ADDR_TIMER_START_DAY, timerStartDay);
+
+    // Save individual timer entries
+    for (uint8_t i = 0; i < timerCount; i++)
     {
-        unsigned long nowMillis = millis();
-        if (!initialNtpSyncDone || (nowMillis - lastNtpSync > NTP_SYNC_INTERVAL))
-        {
-            Serial.println("Attempting NTP Time Synchronization...");
-            configTime(gmtOffset_sec, daylightOffset_sec, ntpServer1, ntpServer2);
-
-            struct tm timeinfo;
-            // Try to get local time with a timeout (e.g., 10 seconds)
-            if (!getLocalTime(&timeinfo, 10000))
-            {
-                Serial.println("ERROR: Failed to obtain time from NTP server.");
-                // Optional: Retry sooner?
-                lastNtpSync = nowMillis - NTP_SYNC_INTERVAL + 15000; // Retry after 15 sec if failed
-            }
-            else
-            {
-                Serial.println("NTP Sync Successful.");
-                DateTime ntpTime = DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-                                            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-                rtc.adjust(ntpTime);       // Adjust DS3231 RTC with the obtained network time
-                lastNtpSync = nowMillis;   // Update last successful sync time
-                initialNtpSyncDone = true; // Mark sync as done
-
-                Serial.print("RTC Time Synced via NTP: ");
-                Serial.print(ntpTime.year(), DEC);
-                Serial.print('/');
-                Serial.print(ntpTime.month(), DEC);
-                Serial.print('/');
-                Serial.print(ntpTime.day(), DEC);
-                Serial.print(" ");
-                Serial.print(ntpTime.hour(), DEC);
-                Serial.print(':');
-                Serial.print(ntpTime.minute(), DEC);
-                Serial.print(':');
-                Serial.println(ntpTime.second(), DEC);
-
-                // If Timer mode start day hasn't been set yet, set it now after first successful sync
-                if (timerStartDay == 0)
-                {
-                    timerStartDay = ntpTime.unixtime() / 86400; // Days since epoch
-                    saveSettingsEEPROM();                       // Save the initialized start day
-                    char buf[12];
-                    sprintf(buf, "%02d/%02d/%02d", ntpTime.day(), ntpTime.month(), ntpTime.year() % 100);
-                    // if (isBlynkConnected()) Blynk.virtualWrite(V20, buf); // Update Blynk display
-                    Serial.print("Timer Mode Start Day Initialized: ");
-                    Serial.println(timerStartDay);
-                }
-            }
-        }
-    }
-    else
-    {
-        // Reset sync flag if we lose WiFi connection
-        initialNtpSyncDone = false;
-    }
-}
-
-// Checks if the day has rolled over and adds a default timer entry if needed and space allows
-void checkAutoTimerAdd()
-{
-    // Only proceed if timer mode is potentially active or relevant
-    // if (mod != 4) return; // Only add in timer mode? Or always add? Assume always for now.
-
-    static uint32_t lastDayChecked = 0; // Track the last day we performed this check for
-    DateTime now = rtc.now();
-    uint32_t currentDay = now.unixtime() / 86400; // Get current day number
-
-    // Don't run if RTC isn't valid (currentDay would be low/incorrect) or if we already checked today
-    if (currentDay < 10000 || currentDay == lastDayChecked)
-    { // Basic sanity check for valid date
-        return;
-    }
-
-    // Check if a new timer entry should be added
-    // Condition: Timer is enabled (count < max), and the last entry's offset is for a previous day
-    if (timerCount < APP_MAX_TIMERS)
-    {
-        bool addNew = false;
-        if (timerCount == 0)
-        {
-            // If no timers exist, and timerStartDay is set, maybe add the first one for day 0?
-            // Let's assume adding is only triggered by user or day rollover after at least one exists.
+        // Calculate address for the current timer entry
+        int addr = EEPROM_ADDR_TIMERS + i * TIMER_ENTRY_SIZE;
+        if (addr + TIMER_ENTRY_SIZE <= EEPROM_SIZE)
+        { // Check bounds
+            EEPROM.put(addr, timerEntries[i].dayOffset);
+            EEPROM.put(addr + sizeof(timerEntries[i].dayOffset), timerEntries[i].minTemp); // Use sizeof for robustness
+            EEPROM.put(addr + sizeof(timerEntries[i].dayOffset) + sizeof(timerEntries[i].minTemp), timerEntries[i].maxTemp);
         }
         else
         {
-            // Check if the current day's offset is greater than the last entry's offset
-            uint16_t currentDayOffset = 0;
-            if (timerStartDay > 0 && currentDay >= timerStartDay)
-            {
-                currentDayOffset = currentDay - timerStartDay;
-            }
-
-            if (currentDayOffset > timerEntries[timerCount - 1].dayOffset)
-            {
-                addNew = true; // Current day offset is past the last scheduled day offset
-            }
-        }
-
-        if (addNew)
-        {
-            Serial.print("New day detected (Day Offset ");
-            Serial.print(currentDay - timerStartDay);
-            Serial.print(" > Last Timer Offset ");
-            Serial.print(timerEntries[timerCount - 1].dayOffset);
-            Serial.println("). Adding default timer entry.");
-
-            // Add a new entry for the day AFTER the last entry
-            timerEntries[timerCount].dayOffset = timerEntries[timerCount - 1].dayOffset + 1;
-            timerEntries[timerCount].minTemp = 28; // Default min
-            timerEntries[timerCount].maxTemp = 32; // Default max
-            timerCount++;
-            saveSettingsEEPROM(); // Save the new entry and count
-            notifyBlynk("Auto-added new daily timer schedule (Default 28/32).");
+            Serial.println("Error: Not enough EEPROM space to save all timer entries!");
+            break; // Stop saving if out of space
         }
     }
 
-    lastDayChecked = currentDay; // Mark that we've checked for this day
+    if (EEPROM.commit())
+    {
+        Serial.println("EEPROM settings saved successfully.");
+    }
+    else
+    {
+        Serial.println("Error: EEPROM commit failed!");
+    }
+    // interrupts();
+}
+
+void loadSettingsEEPROM()
+{
+    Serial.println("Loading settings from EEPROM...");
+
+    // Temporary variables to read into
+    int temp_mi, temp_ma, temp_humLimit, temp_gasLimit;
+    unsigned long temp_switchingDelay;
+    uint8_t temp_timerCount;
+    uint32_t temp_timerStartDay;
+
+    // Load main settings
+    EEPROM.get(EEPROM_ADDR_MIN, temp_mi);
+    EEPROM.get(EEPROM_ADDR_MAX, temp_ma);
+    EEPROM.get(EEPROM_ADDR_DELAY, temp_switchingDelay);
+    EEPROM.get(EEPROM_ADDR_HUM_LIMIT, temp_humLimit);
+    EEPROM.get(EEPROM_ADDR_GAS_LIMIT, temp_gasLimit); 
+
+    // Load Timer count and start day
+    EEPROM.get(EEPROM_ADDR_TIMER_COUNT, temp_timerCount);
+    EEPROM.get(EEPROM_ADDR_TIMER_START_DAY, temp_timerStartDay);
+
+    // --- Validate Loaded Values and Apply Defaults ---
+    // Temperature Thresholds
+    if (temp_mi == -1 || temp_mi < -20 || temp_mi > 60)
+    {            
+        mi = 28; 
+        Serial.println("EEPROM Min Temp invalid, using default.");
+    }
+    else
+    {
+        mi = temp_mi;
+    }
+    if (temp_ma == -1 || temp_ma < -20 || temp_ma > 60 || temp_ma < mi)
+    {            
+        ma = 32; 
+        if (ma < mi) ma = mi; 
+        Serial.println("EEPROM Max Temp invalid, using default.");
+    }
+    else
+    {
+        ma = temp_ma;
+    }
+
+    // Switching Delay
+    if (temp_switchingDelay == 0xFFFFFFFF || temp_switchingDelay < 1 || temp_switchingDelay > 300)
+    {                       
+        switchingDelay = 5; 
+        Serial.println("EEPROM Switching Delay invalid, using default.");
+    }
+    else
+    {
+        switchingDelay = temp_switchingDelay;
+    }
+
+    // Humidity Limit
+    if (temp_humLimit == -1 || temp_humLimit < 0 || temp_humLimit > 100)
+    {                  
+        humLimit = 60; 
+        Serial.println("EEPROM Humidity Limit invalid, using default.");
+    }
+    else
+    {
+        humLimit = temp_humLimit;
+    }
+
+    // Gas Limit
+    if (temp_gasLimit == -1 || temp_gasLimit < 0 || temp_gasLimit > 4095)
+    {                    
+        gasLimit = 2000; 
+        Serial.println("EEPROM Gas Limit invalid, using default.");
+    }
+    else
+    {
+        gasLimit = temp_gasLimit;
+    }
+
+    // Timer Count
+    if (temp_timerCount == 0xFF || temp_timerCount > APP_MAX_TIMERS)
+    {                   
+        timerCount = 0; 
+        Serial.println("EEPROM Timer Count invalid, using default (0).");
+    }
+    else
+    {
+        timerCount = temp_timerCount;
+    }
+
+    // Timer Start Day
+    if (temp_timerStartDay == 0xFFFFFFFF || temp_timerStartDay == 0) // Also treat 0 as potentially uninitialized if NTP hasn't run
+    {                      
+        timerStartDay = 0; 
+        Serial.println("EEPROM Timer Start Day invalid or not set, using default (0).");
+    }
+    else
+    {
+        timerStartDay = temp_timerStartDay;
+    }
+
+    // Load individual timer entries IF timerCount is valid and > 0
+    if (timerCount > 0 && timerCount <= APP_MAX_TIMERS)
+    {
+        for (uint8_t i = 0; i < timerCount; i++)
+        {
+            int addr = EEPROM_ADDR_TIMERS + i * TIMER_ENTRY_SIZE;
+            if (addr + TIMER_ENTRY_SIZE <= EEPROM_SIZE)
+            {
+                uint16_t loadedDayOffset;
+                int loadedMinTemp, loadedMaxTemp;
+
+                EEPROM.get(addr, loadedDayOffset);
+                EEPROM.get(addr + sizeof(loadedDayOffset), loadedMinTemp);
+                EEPROM.get(addr + sizeof(loadedDayOffset) + sizeof(loadedMinTemp), loadedMaxTemp);
+
+                // Validate loadedDayOffset
+                if (loadedDayOffset == 0xFFFF || loadedDayOffset > TIMER_VALID_MAX_DAY_OFFSET) {
+                    timerEntries[i].dayOffset = i; // Default to index if invalid
+                    Serial.printf("Timer[%d] DayOffset invalid (0x%X), using default %d.\n", i, loadedDayOffset, timerEntries[i].dayOffset);
+                } else {
+                    timerEntries[i].dayOffset = loadedDayOffset;
+                }
+
+                // Validate loadedMinTemp
+                if (loadedMinTemp == -1 || loadedMinTemp < TIMER_VALID_MIN_TEMP || loadedMinTemp > TIMER_VALID_MAX_TEMP) {
+                    timerEntries[i].minTemp = TIMER_DEFAULT_MIN_TEMP;
+                    Serial.printf("Timer[%d] MinTemp invalid (%d), using default %d.\n", i, loadedMinTemp, timerEntries[i].minTemp);
+                } else {
+                    timerEntries[i].minTemp = loadedMinTemp;
+                }
+
+                // Validate loadedMaxTemp
+                if (loadedMaxTemp == -1 || loadedMaxTemp < TIMER_VALID_MIN_TEMP || loadedMaxTemp > TIMER_VALID_MAX_TEMP || loadedMaxTemp < timerEntries[i].minTemp) {
+                    timerEntries[i].maxTemp = TIMER_DEFAULT_MAX_TEMP;
+                    if (timerEntries[i].maxTemp < timerEntries[i].minTemp) { // Ensure max is not less than (potentially defaulted) min
+                        timerEntries[i].maxTemp = timerEntries[i].minTemp;
+                    }
+                    Serial.printf("Timer[%d] MaxTemp invalid (%d), using default %d.\n", i, loadedMaxTemp, timerEntries[i].maxTemp);
+                } else {
+                    timerEntries[i].maxTemp = loadedMaxTemp;
+                }
+                
+            }
+            else
+            {
+                Serial.println("Error: EEPROM bounds exceeded while loading timer entries. Stopping load.");
+                timerCount = i; 
+                break;
+            }
+        }
+    }
+    else
+    {
+        timerCount = 0; 
+    }
+
+    Serial.println("Settings loaded from EEPROM.");
+    Serial.print(" Mi:"); Serial.print(mi);
+    Serial.print(" Ma:"); Serial.print(ma);
+    Serial.print(" Delay:"); Serial.print(switchingDelay);
+    Serial.print(" HumLim:"); Serial.print(humLimit);
+    Serial.print(" GasLim:"); Serial.print(gasLimit);
+    Serial.print(" TimerCount:"); Serial.print(timerCount);
+    Serial.print(" TimerStartDay:"); Serial.println(timerStartDay);
+    
+    for (int i = 0; i < timerCount; ++i)
+    {
+        Serial.print(" Timer["); Serial.print(i); Serial.print("]: ");
+        Serial.print("DayOffset="); Serial.print(timerEntries[i].dayOffset);
+        Serial.print(", Min="); Serial.print(timerEntries[i].minTemp);
+        Serial.print(", Max="); Serial.println(timerEntries[i].maxTemp);
+    }
 }
