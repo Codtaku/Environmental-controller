@@ -177,6 +177,16 @@
                 border-bottom: none; 
                 padding: 3px 0;
             }
+            .timer-controls { /* Container for Add/Remove buttons */
+                display: flex;
+                gap: 10px;
+                margin-bottom: 15px;
+                justify-content: flex-start;
+            }
+            .timer-controls button {
+                font-size: 0.9em;
+                padding: 6px 12px;
+            }
             .table-container {
                 max-height: 300px; 
                 overflow-y: auto;
@@ -195,41 +205,35 @@
                 text-align: center;
                 vertical-align: middle; 
             }
-            /* Style for cells containing span and input */
             #timer-list-table .timer-input-cell div {
                 display: flex;
                 align-items: center;
                 justify-content: center; 
                 gap: 8px; 
             }
-            /* Style for the span displaying the current value */
             #timer-list-table .timer-value-display {
                 min-width: 25px; 
                 text-align: right;
                 padding-right: 5px; 
-                color: #28a745; /* Green color for synced value */
+                color: #28a745; 
                 font-weight: bold;
             }
-            /* Style for the input fields in the timer table */
             #timer-list-table input[type=number].timer-input {
                 width: 60px; 
                 padding: 4px 6px;
                 font-size: 0.95em;
                 box-sizing: border-box;
             }
-            /* Style for buttons within the timer table */
             #timer-list-table button { 
                 padding: 5px 10px; 
                 font-size: 0.9em;
                 margin: 2px; 
             }
-            /* Column widths for the timer table */
-            #timer-list-table th:nth-child(1) { width: 15%; } /* Day Offset */
+            #timer-list-table th:nth-child(1) { width: 15%; } 
             #timer-list-table th:nth-child(2),
-            #timer-list-table th:nth-child(3) { width: 35%; } /* Min/Max Temp */
-            #timer-list-table th:nth-child(4) { width: 15%; } /* Action */
+            #timer-list-table th:nth-child(3) { width: 35%; } 
+            #timer-list-table th:nth-child(4) { width: 15%; } 
 
-            /* Sticky header for the timer table */
             #timer-list-table th {
                 background-color: #f2f2f2;
                 font-weight: bold;
@@ -260,6 +264,7 @@
                 .setting strong { margin-bottom: 5px; }
                 .setting div { width: 100%; justify-content: flex-start; }
                 .card > button { width: 90%; } 
+                .timer-controls { flex-direction: column; } /* Stack add/remove buttons */
                 #timer-list-table th:nth-child(1) { width: 20%; }
                 #timer-list-table th:nth-child(2),
                 #timer-list-table th:nth-child(3) { width: 25%; } 
@@ -269,6 +274,8 @@
             }
             button i.fas, .tab button svg { margin-right: 6px; } 
             #timer-list-table button svg { margin-right: 0; } 
+            .timer-controls button svg { margin-right: 4px; }
+
 
         </style>
     </head>
@@ -281,6 +288,8 @@
                 <symbol id="icon-sync" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></symbol>
                 <symbol id="icon-save" viewBox="0 0 16 16"><path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.5 9.5A.5.5 0 0 1 5 9h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 12.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H5.5a.5.5 0 0 1-.5-.5z"/></symbol> 
                 <symbol id="icon-reset" viewBox="0 0 16 16"><path d="M8 3a.5.5 0 0 1 .5.5v2.5H11a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V7.5H5a.5.5 0 0 1 0-1h2.5V4a.5.5 0 0 1 .5-.5z"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/></symbol>
+                <symbol id="icon-plus-circle" viewBox="0 0 16 16"> <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/> <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/> </symbol>
+                <symbol id="icon-trash" viewBox="0 0 16 16"> <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/> <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/> </symbol>
             </defs>
         </svg>
         <nav class="navbar">
@@ -411,12 +420,22 @@
                          <div class="status-item"><strong>Timer Start Date:</strong> <span id="timer-start-date" class="value">--/--/--</span></div>
                          <div class="status-item"><strong>Days Elapsed:</strong> <span id="timer-days-passed" class="value">--</span></div>
                     </div>
-                    <button onclick="syncTimeNow()" style="margin-top: 10px;">
+                    <button onclick="syncTimeNow()" style="margin-top: 10px; margin-bottom: 15px;">
                         <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-sync"></use></svg>
                         Sync RTC with Network Time
                     </button>
                     <hr class="status-divider">
                     <h3>Timer Schedule (Min/Max Temp)</h3>
+                    <div class="timer-controls">
+                        <button onclick="addTimerEntry()" style="background-color: #28a745;">
+                            <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-plus-circle"></use></svg>
+                            Add New Entry
+                        </button>
+                        <button onclick="removeLastTimerEntry()" style="background-color: #dc3545;">
+                             <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-trash"></use></svg>
+                            Remove Last Entry
+                        </button>
+                    </div>
                     <div class="table-container">
                         <table id="timer-list-table">
                             <thead>
@@ -439,9 +458,6 @@
 
         <script>
             // Gauge drawing library (gauge.min.js content) - This is a placeholder for the actual library
-            // In a real scenario, you would include <script src="gauge.min.js"></script>
-            // For this example, the gauge library code is assumed to be present.
-            // (The full gauge.min.js code is quite long and not essential for this specific fix explanation)
             (function() {
             var t, i, e, s, n, o, a, h, r, l, c, p, u, d, g = [].slice,
                 m = {}.hasOwnProperty,
@@ -684,10 +700,11 @@
             }).call(this);
 
             // Global variables for UI state and data
-            let lastMode = -1; // To track mode changes for UI updates
-            let lastData = {}; // Store last full data object for comparison
-            let focusedTimerInputId = null; // Store ID of focused timer input
-            let focusedTimerInputValue = null; // Store value of focused timer input
+            let lastMode = -1; 
+            let lastData = {}; 
+            let focusedTimerInputId = null; 
+            let focusedTimerInputValue = null; 
+            let isInitialPageLoad = true; // Flag for initial data load
 
             // --- Tab Handling ---
             function openTab(evt, tabName) {
@@ -701,9 +718,9 @@
                     tablinks[i].className = tablinks[i].className.replace(" active", "");
                 }
                 document.getElementById(tabName).style.display = "block";
-                if (evt && evt.currentTarget) { // Ensure evt and currentTarget exist
+                if (evt && evt.currentTarget) { 
                     evt.currentTarget.className += " active";
-                } else { // Fallback for initial call without event
+                } else { 
                     const defaultTabButton = Array.from(tablinks).find(btn => btn.textContent.trim().includes(tabName));
                     if (defaultTabButton) defaultTabButton.className += " active";
                 }
@@ -745,14 +762,12 @@
             }
 
             // --- UI Update Functions ---
-            function updateUI(data) {
-                // Update Gauges
+            function updateUI(data, actionType = 'periodic') { // actionType: 'initial', 'periodic', 'add', 'remove'
                 updateGaugeValue(gaugeTemp, data.temp);
                 updateGaugeValue(gaugeHum, data.humidity);
                 updateGaugeValue(gaugeGas, data.gas);
                 updateGaugeValue(gaugeSoil, data.soil);
 
-                // Update Status Text & Conditional Timer Tab
                 let modeText = '--';
                 const timerTabButton = document.getElementById('timer-tab-button');
                 if (data.mode !== undefined) {
@@ -768,44 +783,49 @@
                 } else { if (timerTabButton) timerTabButton.classList.add('hidden'); }
                 setTextContent('mode', modeText);
 
-                // Update Relays
                 updateRelayStatus('r1', data.relay1); updateRelayStatus('r2', data.relay2);
                 updateRelayStatus('r3', data.relay3); updateRelayStatus('r4', data.relay4);
 
-                // Update Settings Display (Main Settings Tab)
-                updateSettingDisplay('min-temp', data.min_temp, 'min-temp-input');
-                updateSettingDisplay('max-temp', data.max_temp, 'max-temp-input');
-                updateSettingDisplay('delay', data.delay, 'delay-input');
-                updateSettingDisplay('hum-limit', data.hum_limit, 'hum-limit-input');
-                updateSettingDisplay('gas-limit', data.gas_limit, 'gas-limit-input');
+                updateSettingDisplay('min-temp-disp', data.min_temp, 'min-temp-input');
+                updateSettingDisplay('max-temp-disp', data.max_temp, 'max-temp-input');
+                updateSettingDisplay('delay-disp', data.delay, 'delay-input');
+                updateSettingDisplay('hum-limit-disp', data.hum_limit, 'hum-limit-input');
+                updateSettingDisplay('gas-limit-disp', data.gas_limit, 'gas-limit-input');
                 
-                // Update Mode Select in Settings Tab
                 const modeSelect = document.getElementById('mode-select');
                 if (modeSelect && document.activeElement !== modeSelect && data.mode !== undefined) {
                     modeSelect.value = data.mode;
                 }
                 
-                // Update Timer Tab Info
-                if (data.mode === 4 || document.getElementById('Timer').style.display === 'block') { // Update if timer mode or tab is visible
+                const forceTimerInputPopulation = (actionType === 'initial' || actionType === 'add' || actionType === 'remove');
+                if (data.mode === 4 || document.getElementById('Timer').style.display === 'block') {
                     setTextContent('timer-current-time', data.currentTimeStr || '--:--:--');
                     setTextContent('timer-start-date', data.startDateStr || '--/--/--');
                     setTextContent('timer-days-passed', data.daysPassed !== undefined ? data.daysPassed : '--');
-                    updateTimerTable(data.timerEntries || [], (data.timerEntries || []).length);
+                    updateTimerTable(data.timerEntries || [], forceTimerInputPopulation);
                 }
                 
                 setTextContent('nav-ip', data.ip_address ? `IP: ${data.ip_address}` : 'IP: N/A');
-                lastData = data; // Store for next comparison
+                lastData = data; 
+                if (actionType === 'initial') isInitialPageLoad = false;
             }
 
-            function updateTimerTable(timerEntries, timerCount) {
+            function updateTimerTable(timerEntries, forceInputPopulation) {
                 const tableBody = document.getElementById("timer-list-table").querySelector('tbody');
                 if (!tableBody) return;
 
-                focusedTimerInputId = null;
-                focusedTimerInputValue = null;
+                let currentFocusedInputId = null;
+                let currentFocusedValue = null;
                 if (document.activeElement && document.activeElement.classList.contains('timer-input')) {
-                    focusedTimerInputId = document.activeElement.id;
-                    focusedTimerInputValue = document.activeElement.value;
+                    currentFocusedInputId = document.activeElement.id;
+                    currentFocusedValue = document.activeElement.value;
+                }
+                
+                const existingInputValues = {};
+                if (!forceInputPopulation) { // If periodic update, store current input values
+                    tableBody.querySelectorAll('.timer-input').forEach(input => {
+                        existingInputValues[input.id] = input.value;
+                    });
                 }
 
                 tableBody.innerHTML = ""; 
@@ -819,18 +839,37 @@
                     const row = tableBody.insertRow();
                     row.insertCell().textContent = entry.offset !== undefined ? entry.offset : '?';
                     
+                    const minInputId = `timer-min-input-${index}`;
+                    const maxInputId = `timer-max-input-${index}`;
+
+                    let minInputValue = (entry.min !== undefined ? entry.min : '');
+                    let maxInputValue = (entry.max !== undefined ? entry.max : '');
+
+                    if (!forceInputPopulation) { // Periodic update: try to keep existing value unless focused
+                        if (currentFocusedInputId !== minInputId && existingInputValues.hasOwnProperty(minInputId)) {
+                            minInputValue = existingInputValues[minInputId];
+                        }
+                        if (currentFocusedInputId !== maxInputId && existingInputValues.hasOwnProperty(maxInputId)) {
+                            maxInputValue = existingInputValues[maxInputId];
+                        }
+                    }
+                     // If it was focused, currentFocusedValue will be restored later.
+                    if (currentFocusedInputId === minInputId) minInputValue = currentFocusedValue;
+                    if (currentFocusedInputId === maxInputId) maxInputValue = currentFocusedValue;
+
+
                     const minTempCell = row.insertCell();
                     minTempCell.className = 'timer-input-cell';
                     minTempCell.innerHTML = `<div>
                                                 <span class="timer-value-display" id="timer-min-disp-${index}">${entry.min !== undefined ? entry.min : '--'}</span>
-                                                <input type="number" class="timer-input" id="timer-min-input-${index}" value="${(focusedTimerInputId === `timer-min-input-${index}`) ? focusedTimerInputValue : (entry.min !== undefined ? entry.min : '')}" step="1">
+                                                <input type="number" class="timer-input" id="${minInputId}" value="${minInputValue}" step="1">
                                             </div>`;
 
                     const maxTempCell = row.insertCell();
                     maxTempCell.className = 'timer-input-cell';
                     maxTempCell.innerHTML = `<div>
                                                 <span class="timer-value-display" id="timer-max-disp-${index}">${entry.max !== undefined ? entry.max : '--'}</span>
-                                                <input type="number" class="timer-input" id="timer-max-input-${index}" value="${(focusedTimerInputId === `timer-max-input-${index}`) ? focusedTimerInputValue : (entry.max !== undefined ? entry.max : '')}" step="1">
+                                                <input type="number" class="timer-input" id="${maxInputId}" value="${maxInputValue}" step="1">
                                             </div>`;
                     
                     const actionCell = row.insertCell();
@@ -838,10 +877,11 @@
                                            <button onclick="resetTimerEntry(${index})" title="Reset Entry ${index+1} to Defaults" style="background-color: #ffc107;"><svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-reset"></use></svg></button>`;
                 });
 
-                if (focusedTimerInputId) {
-                    const focusedElement = document.getElementById(focusedTimerInputId);
+                if (currentFocusedInputId) {
+                    const focusedElement = document.getElementById(currentFocusedInputId);
                     if (focusedElement) {
                         focusedElement.focus();
+                         // Value already set correctly if it was currentFocusedInputId
                         try { focusedElement.setSelectionRange(focusedElement.value.length, focusedElement.value.length); } catch (e) { /* ignore */ }
                     }
                 }
@@ -853,7 +893,7 @@
             }
 
             function updateSettingDisplay(baseDispId, value, inputId) {
-                const dispElement = document.getElementById(baseDispId + '-disp');
+                const dispElement = document.getElementById(baseDispId); // Corrected to use baseDispId directly
                  if (dispElement) dispElement.textContent = (value !== undefined && value !== null) ? value : '--';
                 
                 const inputElement = document.getElementById(inputId);
@@ -879,23 +919,22 @@
                 if (errEl) {
                     errEl.textContent = message;
                     errEl.style.display = message ? 'block' : 'none';
-                    if (message) { setTimeout(() => { displayError(''); }, 5000); }
+                    if (message) { setTimeout(() => { displayError(''); }, 7000); } // Increased timeout
                 }
             }
 
-            // --- Data Fetching and Command Sending ---
-            const UPDATE_INTERVAL = 2500; // milliseconds
-            async function fetchStatus() {
+            const UPDATE_INTERVAL = 2500; 
+            async function fetchStatus(actionType = 'periodic') {
                 try {
                     const response = await fetch('/status');
                     if (!response.ok) {
                         let errorText = `HTTP error! Status: ${response.status}`;
-                        try { errorText = await response.text() || errorText; } catch (e) { /* ignore */ }
+                        try { errorText = await response.text() || errorText; } catch (e) {}
                         throw new Error(errorText);
                     }
                     const data = await response.json();
-                    updateUI(data);
-                    displayError(''); // Clear error on successful fetch
+                    updateUI(data, actionType);
+                    if (actionType !== 'initial') displayError(''); // Clear error on successful subsequent fetches
                 } catch (error) {
                     console.error('Error fetching status:', error);
                     displayError(`Connection Error: ${error.message}. Retrying...`);
@@ -907,19 +946,16 @@
                     displayError(''); 
                     let fullUrl = url;
                     const options = {};
-
                     if (isPost) {
-                        options.method = 'POST'; // Or 'GET' if not POST
-                        // For POST, ESP32 WebServer usually expects x-www-form-urlencoded by default for args
+                        options.method = 'POST';
                         options.headers = {'Content-Type': 'application/x-www-form-urlencoded'};
                         options.body = new URLSearchParams(params).toString();
-                    } else { // GET request
+                    } else { 
                         if (Object.keys(params).length > 0) {
                             fullUrl += '?' + new URLSearchParams(params).toString();
                         }
                         options.method = 'GET';
                     }
-                    
                     const response = await fetch(fullUrl, options);
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -927,7 +963,12 @@
                     }
                     const result = await response.text();
                     console.log('Command result for', url, ':', result);
-                    await fetchStatus(); 
+                    // Determine actionType for fetchStatus based on URL or a new parameter if needed
+                    let action = 'periodic';
+                    if (url.includes('addtimer') || url.includes('removelasttimer')) {
+                        action = url.includes('addtimer') ? 'add' : 'remove';
+                    }
+                    await fetchStatus(action); 
                 } catch (error) {
                     console.error('Error sending command:', error);
                     displayError(`Command Error: ${error.message}`);
@@ -958,50 +999,43 @@
                 sendCommand(`/setsettings`, false, {min: minVal, max: maxVal, delay: delayVal, hum: humVal, gas: gasVal});
             }
 
-            window.syncTimeNow = function() {
-                sendCommand('/synctime');
-            }
+            window.syncTimeNow = function() { sendCommand('/synctime'); }
             
             window.saveTimerEntry = function(index) {
                 const minInput = document.getElementById(`timer-min-input-${index}`);
                 const maxInput = document.getElementById(`timer-max-input-${index}`);
-                
-                let minValStr = minInput.value.trim();
-                let maxValStr = maxInput.value.trim();
-
+                let minValStr = minInput.value.trim(); let maxValStr = maxInput.value.trim();
                 if (minValStr === "") { displayError(`Entry ${index + 1}: Min Temp cannot be empty.`); return; }
                 if (maxValStr === "") { displayError(`Entry ${index + 1}: Max Temp cannot be empty.`); return; }
-
-                const minTemp = parseInt(minValStr);
-                const maxTemp = parseInt(maxValStr);
-
+                const minTemp = parseInt(minValStr); const maxTemp = parseInt(maxValStr);
                 if (isNaN(minTemp)) { displayError(`Entry ${index + 1}: Min Temp must be a valid number.`); return; }
                 if (isNaN(maxTemp)) { displayError(`Entry ${index + 1}: Max Temp must be a valid number.`); return; }
-                
-                // Example range validation, adjust as needed
                 if (minTemp < 0 || minTemp > 50) { displayError(`Entry ${index + 1}: Min Temp must be between 0 and 50.`); return;}
                 if (maxTemp < 0 || maxTemp > 50) { displayError(`Entry ${index + 1}: Max Temp must be between 0 and 50.`); return;}
-
-                if (minTemp > maxTemp) {
-                    displayError(`Entry ${index + 1}: Min Temp (${minTemp}) cannot be greater than Max Temp (${maxTemp}).`);
-                    return; 
-                }
-                
-                console.log(`Saving Timer Entry Index: ${index}, Min: ${minTemp}, Max: ${maxTemp}`);
+                if (minTemp > maxTemp) { displayError(`Entry ${index + 1}: Min Temp (${minTemp}) cannot be greater than Max Temp (${maxTemp}).`); return; }
                 sendCommand(`/settimerentry`, false, {index: index, min: minTemp, max: maxTemp});
             }
 
             window.resetTimerEntry = function(index) {
                 if (!confirm(`Are you sure you want to reset Timer Entry ${index + 1} to defaults (28/32)?`)) { return; }
-                console.log(`Resetting Timer Entry Index: ${index}`);
                 sendCommand(`/resettimerentry`, false, {index: index});
+            }
+
+            window.addTimerEntry = function() {
+                if (!confirm("Are you sure you want to add a new timer entry with default values?")) return;
+                sendCommand('/addtimer'); // ESP32 will handle logic and save
+            }
+
+            window.removeLastTimerEntry = function() {
+                if (!confirm("Are you sure you want to remove the last timer entry? This cannot be undone from the Web UI.")) return;
+                sendCommand('/removelasttimer'); // ESP32 will handle logic and save
             }
 
             // --- Initialization ---
             window.onload = () => {
                 openTab({currentTarget: document.querySelector('.tablinks.active')}, 'Dashboard'); 
                 initializeGauges();
-                fetchStatus(); // Initial data fetch
+                fetchStatus('initial'); // Pass 'initial' for the first load
                 setInterval(fetchStatus, UPDATE_INTERVAL); 
             };
         </script>

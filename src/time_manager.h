@@ -7,5 +7,6 @@
 void setupTime();         // Initializes the RTC
 void updateRTCFromNTP();  // Attempts to sync RTC with NTP server
 void checkAutoTimerAdd(); // Checks if a new day requires adding a default timer entry
-
+void handleAddTimerEntry();
+void handleRemoveLastTimerEntry();
 #endif // TIME_MANAGER_H
