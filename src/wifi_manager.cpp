@@ -47,7 +47,13 @@ bool serveFile(String path, String contentType) {
 }   
 void handleCSS() { serveFile("/style.css", "text/css"); }
 void handleJS() { serveFile("/script.js", "application/javascript"); }
-void handleRoot() { serveFile("/index.html", "text/html"); }
+//void handleRoot() { serveFile("/index.html", "text/html"); }
+void handleRoot() { 
+    serveFile("/gauge.js", "application/javascript"); 
+    serveFile("/script.js", "application/javascript");
+    serveFile("style.css", "text/css");
+    serveFile("/index_non_js.html", "text/html");
+}
 void handleGaugeJS() { serveFile("/gauge.js", "application/javascript"); }
 void handleStatus()
 {

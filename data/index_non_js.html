@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ESP32 Env Controller</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <defs>
+                <symbol id="icon-dashboard" viewBox="0 0 16 16"><path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h-4V2zm-6 8a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4h-4V10zm-6-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8H0V6z"/></symbol>
+                <symbol id="icon-settings" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705-1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872 2.105l.34-.1c1.4-.413-1.4 2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></symbol>
+                <symbol id="icon-timer" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></symbol>
+                <symbol id="icon-sync" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></symbol>
+                <symbol id="icon-save" viewBox="0 0 16 16"><path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.5 9.5A.5.5 0 0 1 5 9h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 12.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H5.5a.5.5 0 0 1-.5-.5z"/></symbol> 
+                <symbol id="icon-reset" viewBox="0 0 16 16"><path d="M8 3a.5.5 0 0 1 .5.5v2.5H11a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V7.5H5a.5.5 0 0 1 0-1h2.5V4a.5.5 0 0 1 .5-.5z"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/></symbol>
+                <symbol id="icon-plus-circle" viewBox="0 0 16 16"> <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/> <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/> </symbol>
+                <symbol id="icon-trash" viewBox="0 0 16 16"> <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/> <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/> </symbol>
+            </defs>
+        </svg>
+        <nav class="navbar">
+            <div class="navbar-brand">Environmental Controller</div>
+            <div class="navbar-ip" id="nav-ip">IP: Loading...</div>
+        </nav>
+
+        <div class="container">
+            <div class="tab">
+                <button class="tablinks active" onclick="openTab(event, 'Dashboard')">
+                    <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-dashboard"></use></svg>
+                    Dashboard
+                </button>
+                <button class="tablinks" onclick="openTab(event, 'Settings')">
+                     <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-settings"></use></svg>
+                    Settings
+                </button>
+                <button class="tablinks hidden" id="timer-tab-button" onclick="openTab(event, 'Timer')">
+                     <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-timer"></use></svg>
+                     Timer
+                </button>
+            </div>
+            
+            <div id="Dashboard" class="tabcontent" style="display: block;">
+                <div class="card">
+                    <h2>Live Readings</h2>
+                    <div class="gauges">
+                        <div class="gauge-container">
+                            <canvas id="gauge-temp" class="gauge"></canvas>
+                            <span id="gauge-temp-val" class="gauge-value">--</span>
+                            <div>Temperature (&deg;C)</div>
+                        </div>
+                        <div class="gauge-container">
+                            <canvas id="gauge-hum" class="gauge"></canvas>
+                            <span id="gauge-hum-val" class="gauge-value">--</span>
+                            <div>Humidity (%)</div>
+                        </div>
+                        <div class="gauge-container">
+                            <canvas id="gauge-gas" class="gauge"></canvas>
+                            <span id="gauge-gas-val" class="gauge-value">--</span>
+                            <div>Gas Level</div>
+                        </div>
+                        <div class="gauge-container">
+                            <canvas id="gauge-soil" class="gauge"></canvas>
+                            <span id="gauge-soil-val" class="gauge-value">--</span>
+                            <div>Soil Moisture (%)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>System Status</h2>
+                    <div class="status-item mode-line">
+                        <strong>Mode:</strong> <span id="mode" class="value">--</span>
+                    </div>
+                    <hr class="status-divider">
+                    <div class="status-grid">
+                        <div class="status-item"><strong>Relay 1 (Heat):</strong> <span id="r1" class="value off">--</span></div>
+                        <div class="status-item"><strong>Relay 2 (Heat):</strong> <span id="r2" class="value off">--</span></div>
+                        <div class="status-item"><strong>Relay 3 (Dehum):</strong> <span id="r3" class="value off">--</span></div>
+                        <div class="status-item"><strong>Relay 4 (Mist):</strong> <span id="r4" class="value off">--</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="Settings" class="tabcontent">
+                <div class="card">
+                    <h2>Settings</h2>
+                    <div class="setting">
+                        <strong>Mode Control:</strong>
+                        <div>
+                            <select id="mode-select">
+                                <option value="0">AUTO</option>
+                                <option value="1">OFF</option>
+                                <option value="2">ON</option>
+                                <option value="3">HALF</option>
+                                <option value="4">TIMER</option>
+                            </select>
+                            <button onclick="setMode()">Set Mode</button>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <strong>Min Temp (&deg;C):</strong>
+                        <div>
+                            <span id="min-temp-disp" class="value">--</span>
+                            <input type="number" id="min-temp-input" step="1">
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <strong>Max Temp (&deg;C):</strong>
+                        <div>
+                            <span id="max-temp-disp" class="value">--</span>
+                            <input type="number" id="max-temp-input" step="1">
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <strong>Switch Delay (s):</strong>
+                        <div>
+                            <span id="delay-disp" class="value">--</span>
+                            <input type="number" id="delay-input" step="1" min="1" max="300">
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <strong>Humidity Limit (%):</strong>
+                        <div>
+                            <span id="hum-limit-disp" class="value">--</span>
+                            <input type="number" id="hum-limit-input" step="1" min="0" max="100">
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <strong>Gas Limit (Raw):</strong>
+                        <div>
+                            <span id="gas-limit-disp" class="value">--</span>
+                            <input type="number" id="gas-limit-input" step="50" min="0" max="4095">
+                        </div>
+                    </div>
+                    <button onclick="saveAllSettings()">
+                        <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-save"></use></svg>
+                        Save All Settings
+                    </button>
+                </div>
+            </div>
+
+            <div id="Timer" class="tabcontent">
+                <div class="card">
+                    <h2>Timer Status & Schedule</h2>
+                    <div class="timer-info">
+                         <div class="status-item"><strong>Current Time:</strong> <span id="timer-current-time" class="value">--:--:--</span></div>
+                         <div class="status-item"><strong>Timer Start Date:</strong> <span id="timer-start-date" class="value">--/--/--</span></div>
+                         <div class="status-item"><strong>Days Elapsed:</strong> <span id="timer-days-passed" class="value">--</span></div>
+                    </div>
+                    <button onclick="syncTimeNow()" style="margin-top: 10px; margin-bottom: 15px;">
+                        <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-sync"></use></svg>
+                        Sync RTC with Network Time
+                    </button>
+                    <hr class="status-divider">
+                    <h3>Timer Schedule (Min/Max Temp)</h3>
+                    <div class="timer-controls">
+                        <button onclick="addTimerEntry()" style="background-color: #28a745;">
+                            <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-plus-circle"></use></svg>
+                            Add New Entry
+                        </button>
+                        <button onclick="removeLastTimerEntry()" style="background-color: #dc3545;">
+                             <svg width="1em" height="1em" fill="currentColor"><use xlink:href="#icon-trash"></use></svg>
+                            Remove Last Entry
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table id="timer-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Day Offset</th>
+                                    <th>Min Temp (&deg;C)</th>
+                                    <th>Max Temp (&deg;C)</th>
+                                    <th>Action</th> 
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="4">Loading schedule...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="error-msg"></div>
+        </div>
+    </body>
+    <script src = script.js></script>
+    <script src = gauge.js></script>
+</html>
