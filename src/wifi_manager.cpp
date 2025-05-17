@@ -21,7 +21,7 @@ bool serveFile(String path, String contentType) {
          return false;
     }
     if (path.endsWith("/") || path.isEmpty()) {
-        path = "/index.html"; // Default file
+        path = "/index_non_js.html"; // Default file
     }
     Serial.print("Serving file: "); Serial.println(path);
 
@@ -50,7 +50,7 @@ void handleJS() { serveFile("/script.js", "application/javascript"); }
 //void handleRoot() { serveFile("/index.html", "text/html"); }
 void handleRoot() { 
     serveFile("/gauge.js", "application/javascript"); 
-    serveFile("/script.js", "application/javascript");
+    //serveFile("/script.js", "application/javascript");
     serveFile("style.css", "text/css");
     serveFile("/index_non_js.html", "text/html");
 }
