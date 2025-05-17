@@ -21,7 +21,7 @@ bool serveFile(String path, String contentType) {
          return false;
     }
     if (path.endsWith("/") || path.isEmpty()) {
-        path = "/index_non_js.html"; // Default file
+        path = "/index.html"; // Default file
     }
     Serial.print("Serving file: "); Serial.println(path);
 
@@ -47,13 +47,12 @@ bool serveFile(String path, String contentType) {
 }   
 void handleCSS() { serveFile("/style.css", "text/css"); }
 void handleJS() { serveFile("/script.js", "application/javascript"); }
-//void handleRoot() { serveFile("/index.html", "text/html"); }
-void handleRoot() { 
-    serveFile("/gauge.js", "application/javascript"); 
-    //serveFile("/script.js", "application/javascript");
-    serveFile("style.css", "text/css");
-    serveFile("/index_non_js.html", "text/html");
-}
+void handleRoot() { serveFile("/index.html", "text/html"); }
+// void handleRoot() { 
+//     serveFile("/gauge.js", "application/javascript"); // Serve gauge.js first
+//     serveFile("/style.css", "text/css"); // Serve CSS
+//     serveFile("/index_non_js.html", "text/html"); 
+// }
 void handleGaugeJS() { serveFile("/gauge.js", "application/javascript"); }
 void handleStatus()
 {
@@ -118,51 +117,6 @@ void handleStatus()
     String jsonString;
     serializeJson(jsonDoc, jsonString);
     server.send(200, "application/json", jsonString);
-}
-void handleAddTimerEntry() {
-    // Your C++ logic to add a timer entry
-    // - Check if timerCount < APP_MAX_TIMERS
-    // - Calculate new dayOffset
-    // - Set default min/max (e.g., 28/32)
-    // - Add to timerEntries array
-    // - Increment timerCount
-    // - saveSettingsEEPROM();
-    // - server.send(200, "text/plain", "Timer entry added successfully");
-    // Example:
-    if (timerCount < APP_MAX_TIMERS) {
-        noInterrupts(); // Protect shared variables
-        uint16_t newOffset = (timerCount > 0) ? timerEntries[timerCount - 1].dayOffset + 1 : 0;
-        timerEntries[timerCount].dayOffset = newOffset;
-        timerEntries[timerCount].minTemp = 28; // Default min
-        timerEntries[timerCount].maxTemp = 32; // Default max
-        timerCount++;
-        interrupts();
-        saveSettingsEEPROM(); // Assumes this function is globally accessible or part of a manager
-        server.send(200, "text/plain", "Timer entry added. Count: " + String(timerCount));
-        Serial.println("WebUI: Added new timer entry.");
-    } else {
-        server.send(400, "text/plain", "Max timer entries reached.");
-        Serial.println("WebUI: Max timer entries reached, cannot add.");
-    }
-}
-void handleRemoveLastTimerEntry() {
-    // Your C++ logic to remove the last timer entry
-    // - Check if timerCount > 0
-    // - Decrement timerCount
-    // - saveSettingsEEPROM();
-    // - server.send(200, "text/plain", "Last timer entry removed");
-    // Example:
-    if (timerCount > 0) {
-        noInterrupts(); // Protect shared variable
-        timerCount--;
-        interrupts();
-        saveSettingsEEPROM();
-        server.send(200, "text/plain", "Last timer entry removed. Count: " + String(timerCount));
-        Serial.println("WebUI: Removed last timer entry.");
-    } else {
-        server.send(400, "text/plain", "No timer entries to remove.");
-        Serial.println("WebUI: No timer entries to remove.");
-    }
 }
 void handleSyncTime() {
     Serial.println("Web UI requested NTP Sync...");
@@ -281,7 +235,7 @@ void handleResetTimerEntry() {
 
     // Validation
     noInterrupts(); uint8_t currentCount = timerCount; interrupts();
-    if (index < 0 || index > currentCount || index > APP_MAX_TIMERS) {
+    if (index < 0 || index >= currentCount || index >= APP_MAX_TIMERS) {
          server.send(400, "text/plain", "Invalid timer index");
          return;
     }
@@ -421,8 +375,6 @@ void setupWiFiAndServer()
         server.on("/synctime", HTTP_GET, handleSyncTime);
         server.on("/settimerentry", HTTP_GET, handleSetTimerEntry);
         server.on("/resettimerentry", HTTP_GET, handleResetTimerEntry);
-        server.on("/addtimer", HTTP_GET, handleAddTimerEntry);
-        server.on("/removelasttimer", HTTP_GET, handleRemoveLastTimerEntry);
         server.onNotFound([](){ server.send(404, "text/plain", "Not Found"); });
         server.begin();
         serverInitialized = true;

@@ -38,6 +38,7 @@
 			"marduino.h": "c",
 			"list": "cpp",
 			"regex": "cpp"
-		}
+		},
+		"liveServer.settings.multiRootWorkspaceName": "Environmental-controller"
 	}
 }

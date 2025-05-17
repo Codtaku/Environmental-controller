@@ -144,3 +144,5 @@ This project uses an ESP32 microcontroller to create a versatile environmental c
 * **Edge AI:** If specific on-device processing is needed (e.g., audio analysis for cough detection), investigate TinyML deployment on the ESP32.
 * **Hardware Additions:** Add and integrate cameras (for computer vision AI), microphones (for audio AI), specific gas sensors (Ammonia), feed/water level sensors, SD card module.
 * **MQTT for Home Automation:** If desired, ensure the ESP32's MQTT implementation is compatible with platforms like Home Assistant.
+
+OnGoing Phase : Phase 2

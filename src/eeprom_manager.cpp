@@ -1,6 +1,13 @@
 #include "eeprom_manager.h"
 #include <EEPROM.h>
 
+// Define reasonable defaults and validation ranges for timer entries
+#define TIMER_DEFAULT_MIN_TEMP 28
+#define TIMER_DEFAULT_MAX_TEMP 32
+#define TIMER_VALID_MIN_TEMP 0
+#define TIMER_VALID_MAX_TEMP 50 // Adjust if your system supports higher/lower
+#define TIMER_VALID_MAX_DAY_OFFSET 3650 // Max 10 years of offset
+
 void setupEEPROM()
 {
     EEPROM.begin(EEPROM_SIZE);
@@ -10,6 +17,11 @@ void setupEEPROM()
 void saveSettingsEEPROM()
 {
     Serial.println("Saving settings to EEPROM...");
+    // Disable interrupts during critical EEPROM operations if necessary,
+    // though EEPROM library itself might handle atomicity for single put/get.
+    // For multiple puts forming a logical unit, consider if an intermediate power loss is a concern.
+    // noInterrupts(); 
+
     EEPROM.put(EEPROM_ADDR_MIN, mi);
     EEPROM.put(EEPROM_ADDR_MAX, ma);
     EEPROM.put(EEPROM_ADDR_DELAY, switchingDelay);
@@ -28,8 +40,8 @@ void saveSettingsEEPROM()
         if (addr + TIMER_ENTRY_SIZE <= EEPROM_SIZE)
         { // Check bounds
             EEPROM.put(addr, timerEntries[i].dayOffset);
-            EEPROM.put(addr + 2, timerEntries[i].minTemp); // Offset by 2 bytes (size of uint16_t)
-            EEPROM.put(addr + 4, timerEntries[i].maxTemp); // Offset by 4 bytes
+            EEPROM.put(addr + sizeof(timerEntries[i].dayOffset), timerEntries[i].minTemp); // Use sizeof for robustness
+            EEPROM.put(addr + sizeof(timerEntries[i].dayOffset) + sizeof(timerEntries[i].minTemp), timerEntries[i].maxTemp);
         }
         else
         {
@@ -37,11 +49,6 @@ void saveSettingsEEPROM()
             break; // Stop saving if out of space
         }
     }
-    // Clear any leftover timer entries in EEPROM if count decreased? Optional.
-    // for (uint8_t i = timerCount; i < MAX_TIMERS; i++) {
-    //      int addr = EEPROM_ADDR_TIMERS + i * TIMER_ENTRY_SIZE;
-    //      // Write default/empty data or zeros
-    // }
 
     if (EEPROM.commit())
     {
@@ -51,6 +58,7 @@ void saveSettingsEEPROM()
     {
         Serial.println("Error: EEPROM commit failed!");
     }
+    // interrupts();
 }
 
 void loadSettingsEEPROM()
@@ -68,18 +76,17 @@ void loadSettingsEEPROM()
     EEPROM.get(EEPROM_ADDR_MAX, temp_ma);
     EEPROM.get(EEPROM_ADDR_DELAY, temp_switchingDelay);
     EEPROM.get(EEPROM_ADDR_HUM_LIMIT, temp_humLimit);
-    EEPROM.get(EEPROM_ADDR_GAS_LIMIT, temp_gasLimit); // Load Gas Limit
+    EEPROM.get(EEPROM_ADDR_GAS_LIMIT, temp_gasLimit); 
 
     // Load Timer count and start day
     EEPROM.get(EEPROM_ADDR_TIMER_COUNT, temp_timerCount);
     EEPROM.get(EEPROM_ADDR_TIMER_START_DAY, temp_timerStartDay);
 
     // --- Validate Loaded Values and Apply Defaults ---
-    // Check if EEPROM was initialized (often reads as -1 or 255)
     // Temperature Thresholds
     if (temp_mi == -1 || temp_mi < -20 || temp_mi > 60)
-    {            // Check for uninitialized or unreasonable value
-        mi = 28; // Default Min Temp
+    {            
+        mi = 28; 
         Serial.println("EEPROM Min Temp invalid, using default.");
     }
     else
@@ -87,10 +94,9 @@ void loadSettingsEEPROM()
         mi = temp_mi;
     }
     if (temp_ma == -1 || temp_ma < -20 || temp_ma > 60 || temp_ma < mi)
-    {            // Check unreasonable or max < min
-        ma = 32; // Default Max Temp
-        if (ma < mi)
-            ma = mi; // Ensure max >= min after defaulting
+    {            
+        ma = 32; 
+        if (ma < mi) ma = mi; 
         Serial.println("EEPROM Max Temp invalid, using default.");
     }
     else
@@ -100,8 +106,8 @@ void loadSettingsEEPROM()
 
     // Switching Delay
     if (temp_switchingDelay == 0xFFFFFFFF || temp_switchingDelay < 1 || temp_switchingDelay > 300)
-    {                       // Check uninitialized or unreasonable range (e.g., 1-300 seconds)
-        switchingDelay = 5; // Default Delay
+    {                       
+        switchingDelay = 5; 
         Serial.println("EEPROM Switching Delay invalid, using default.");
     }
     else
@@ -111,8 +117,8 @@ void loadSettingsEEPROM()
 
     // Humidity Limit
     if (temp_humLimit == -1 || temp_humLimit < 0 || temp_humLimit > 100)
-    {                  // Check uninitialized or 0-100 range
-        humLimit = 60; // Default Humidity Limit
+    {                  
+        humLimit = 60; 
         Serial.println("EEPROM Humidity Limit invalid, using default.");
     }
     else
@@ -122,8 +128,8 @@ void loadSettingsEEPROM()
 
     // Gas Limit
     if (temp_gasLimit == -1 || temp_gasLimit < 0 || temp_gasLimit > 4095)
-    {                    // Check uninitialized or 0-4095 range
-        gasLimit = 2000; // Default Gas Limit
+    {                    
+        gasLimit = 2000; 
         Serial.println("EEPROM Gas Limit invalid, using default.");
     }
     else
@@ -133,8 +139,8 @@ void loadSettingsEEPROM()
 
     // Timer Count
     if (temp_timerCount == 0xFF || temp_timerCount > APP_MAX_TIMERS)
-    {                   // Check uninitialized or > max allowed
-        timerCount = 0; // Default: No timers
+    {                   
+        timerCount = 0; 
         Serial.println("EEPROM Timer Count invalid, using default (0).");
     }
     else
@@ -143,10 +149,10 @@ void loadSettingsEEPROM()
     }
 
     // Timer Start Day
-    if (temp_timerStartDay == 0xFFFFFFFF)
-    {                      // Check uninitialized
-        timerStartDay = 0; // Default: Not started
-        Serial.println("EEPROM Timer Start Day invalid, using default (0).");
+    if (temp_timerStartDay == 0xFFFFFFFF || temp_timerStartDay == 0) // Also treat 0 as potentially uninitialized if NTP hasn't run
+    {                      
+        timerStartDay = 0; 
+        Serial.println("EEPROM Timer Start Day invalid or not set, using default (0).");
     }
     else
     {
@@ -161,51 +167,68 @@ void loadSettingsEEPROM()
             int addr = EEPROM_ADDR_TIMERS + i * TIMER_ENTRY_SIZE;
             if (addr + TIMER_ENTRY_SIZE <= EEPROM_SIZE)
             {
-                EEPROM.get(addr, timerEntries[i].dayOffset);
-                EEPROM.get(addr + 2, timerEntries[i].minTemp);
-                EEPROM.get(addr + 4, timerEntries[i].maxTemp);
-                // Add validation for loaded timer entry values if needed
-                // e.g., if (timerEntries[i].minTemp < 0 || timerEntries[i].maxTemp > 50) ... reset to defaults
+                uint16_t loadedDayOffset;
+                int loadedMinTemp, loadedMaxTemp;
+
+                EEPROM.get(addr, loadedDayOffset);
+                EEPROM.get(addr + sizeof(loadedDayOffset), loadedMinTemp);
+                EEPROM.get(addr + sizeof(loadedDayOffset) + sizeof(loadedMinTemp), loadedMaxTemp);
+
+                // Validate loadedDayOffset
+                if (loadedDayOffset == 0xFFFF || loadedDayOffset > TIMER_VALID_MAX_DAY_OFFSET) {
+                    timerEntries[i].dayOffset = i; // Default to index if invalid
+                    Serial.printf("Timer[%d] DayOffset invalid (0x%X), using default %d.\n", i, loadedDayOffset, timerEntries[i].dayOffset);
+                } else {
+                    timerEntries[i].dayOffset = loadedDayOffset;
+                }
+
+                // Validate loadedMinTemp
+                if (loadedMinTemp == -1 || loadedMinTemp < TIMER_VALID_MIN_TEMP || loadedMinTemp > TIMER_VALID_MAX_TEMP) {
+                    timerEntries[i].minTemp = TIMER_DEFAULT_MIN_TEMP;
+                    Serial.printf("Timer[%d] MinTemp invalid (%d), using default %d.\n", i, loadedMinTemp, timerEntries[i].minTemp);
+                } else {
+                    timerEntries[i].minTemp = loadedMinTemp;
+                }
+
+                // Validate loadedMaxTemp
+                if (loadedMaxTemp == -1 || loadedMaxTemp < TIMER_VALID_MIN_TEMP || loadedMaxTemp > TIMER_VALID_MAX_TEMP || loadedMaxTemp < timerEntries[i].minTemp) {
+                    timerEntries[i].maxTemp = TIMER_DEFAULT_MAX_TEMP;
+                    if (timerEntries[i].maxTemp < timerEntries[i].minTemp) { // Ensure max is not less than (potentially defaulted) min
+                        timerEntries[i].maxTemp = timerEntries[i].minTemp;
+                    }
+                    Serial.printf("Timer[%d] MaxTemp invalid (%d), using default %d.\n", i, loadedMaxTemp, timerEntries[i].maxTemp);
+                } else {
+                    timerEntries[i].maxTemp = loadedMaxTemp;
+                }
+                
             }
             else
             {
                 Serial.println("Error: EEPROM bounds exceeded while loading timer entries. Stopping load.");
-                timerCount = i; // Adjust count to only include successfully loaded entries
+                timerCount = i; 
                 break;
             }
         }
     }
     else
     {
-        timerCount = 0; // Ensure count is 0 if the loaded value was invalid
+        timerCount = 0; 
     }
 
     Serial.println("Settings loaded from EEPROM.");
-    Serial.print(" Mi:");
-    Serial.print(mi);
-    Serial.print(" Ma:");
-    Serial.print(ma);
-    Serial.print(" Delay:");
-    Serial.print(switchingDelay);
-    Serial.print(" HumLim:");
-    Serial.print(humLimit);
-    Serial.print(" GasLim:");
-    Serial.print(gasLimit);
-    Serial.print(" TimerCount:");
-    Serial.print(timerCount);
-    Serial.print(" TimerStartDay:");
-    Serial.println(timerStartDay);
-    // Print loaded timer entries for verification
+    Serial.print(" Mi:"); Serial.print(mi);
+    Serial.print(" Ma:"); Serial.print(ma);
+    Serial.print(" Delay:"); Serial.print(switchingDelay);
+    Serial.print(" HumLim:"); Serial.print(humLimit);
+    Serial.print(" GasLim:"); Serial.print(gasLimit);
+    Serial.print(" TimerCount:"); Serial.print(timerCount);
+    Serial.print(" TimerStartDay:"); Serial.println(timerStartDay);
+    
     for (int i = 0; i < timerCount; ++i)
     {
-        Serial.print(" Timer[");
-        Serial.print(i);
-        Serial.print("]: ");
-        Serial.print("DayOffset=");
-        Serial.print(timerEntries[i].dayOffset);
-        Serial.print(", Min=");
-        Serial.print(timerEntries[i].minTemp);
-        Serial.print(", Max=");
-        Serial.println(timerEntries[i].maxTemp);
+        Serial.print(" Timer["); Serial.print(i); Serial.print("]: ");
+        Serial.print("DayOffset="); Serial.print(timerEntries[i].dayOffset);
+        Serial.print(", Min="); Serial.print(timerEntries[i].minTemp);
+        Serial.print(", Max="); Serial.println(timerEntries[i].maxTemp);
     }
 }
